@@ -390,6 +390,169 @@ const getCookies = async (uri, format, callback, profile) => {
 
 };
 
+const getCookiesPromise = async (uri, format, profile) => {
+
+	return new Promise(async (resolve, reject) => {
+
+		profile ? profile : profile = 'Default'
+
+		if (process.platform === 'darwin') {
+
+			path = process.env.HOME + `/Library/Application Support/Google/Chrome/${profile}/Cookies`;
+			ITERATIONS = 1003;
+		
+		} else if (process.platform === 'linux') {
+		
+			path = process.env.HOME + `/.config/google-chrome/${profile}/Cookies`;
+			ITERATIONS = 1;
+		
+		} else {
+		
+			console.error('Only Mac and Linux are supported.');
+			process.exit();
+		
+		}
+
+		db = new sqlite3.Database(path);
+
+		if (format instanceof Function) {
+			callback = format;
+			format = null;
+		}
+
+		var parsedUrl = url.parse(uri);
+
+		if (!parsedUrl.protocol || !parsedUrl.hostname) {
+			return reject(new Error('Could not parse URI, format should be http://www.example.com/path/'));
+		}
+
+		if (dbClosed) {
+			db = new sqlite3.Database(path);
+			dbClosed = false;
+		}
+
+		getDerivedKey(function (err, derivedKey) {
+
+			if (err) {
+				return reject(err);
+			}
+
+			db.serialize(function () {
+
+				var cookies = [];
+
+				var domain = tld.getDomain(uri);
+
+				if (!domain) {
+					return reject(new Error('Could not parse domain from URI, format should be http://www.example.com/path/'));
+				}
+
+				// ORDER BY tries to match sort order specified in
+				// RFC 6265 - Section 5.4, step 2
+				// http://tools.ietf.org/html/rfc6265#section-5.4
+				
+				db.each("SELECT host_key, path, is_secure, expires_utc, name, value, encrypted_value, creation_utc, is_httponly, has_expires, is_persistent FROM cookies where host_key like '%" + domain + "' ORDER BY LENGTH(path) DESC, creation_utc ASC", function (err, cookie) {
+
+					var encryptedValue,
+						value;
+
+					if (err) {
+						return reject(err);
+					}
+
+					if (cookie.value === '' && cookie.encrypted_value.length > 0) {
+						encryptedValue = cookie.encrypted_value;
+						cookie.value = decrypt(derivedKey, encryptedValue);
+						delete cookie.encrypted_value;
+					}
+
+					cookies.push(cookie);
+
+				}, function () {
+
+					var host = parsedUrl.hostname,
+						path = parsedUrl.path,
+						isSecure = parsedUrl.protocol.match('https'),
+						cookieStore = {},
+						validCookies = [],
+						output;
+
+					cookies.forEach(function (cookie) {
+
+						if (cookie.is_secure && !isSecure) {
+							return;
+						}
+
+						if (!tough.domainMatch(host, cookie.host_key, true)) {
+							return;
+						}
+
+						if (!tough.pathMatch(path, cookie.path)) {
+							return;
+						}
+
+						validCookies.push(cookie);
+
+					});
+
+					var filteredCookies = [];
+					var keys = {};
+
+					validCookies.reverse().forEach(function (cookie) {
+
+						if (typeof keys[cookie.name] === 'undefined') {
+							filteredCookies.push(cookie);
+							keys[cookie.name] = true;
+						}
+
+					});
+
+					validCookies = filteredCookies.reverse();
+
+					switch (format) {
+
+						case 'curl':
+							output = convertRawToNetscapeCookieFileFormat(validCookies, domain);
+							break;
+
+						case 'jar':
+							output = convertRawToJar(validCookies, uri);
+							break;
+
+						case 'set-cookie':
+							output = convertRawToSetCookieStrings(validCookies);
+							break;
+
+						case 'header':
+							output = convertRawToHeader(validCookies);
+							break;
+
+						case 'puppeteer':
+							output = convertRawToPuppeteerState(validCookies)
+							break;
+
+						case 'object':
+							/* falls through */
+						default:
+							output = convertRawToObject(validCookies);
+							break;
+
+					}
+
+					db.close(function(err) {
+						if (!err) dbClosed = true
+						resolve(output);
+					});
+
+				});
+
+			});
+
+		});
+	})
+};
+
 module.exports = {
-	getCookies
+	getCookies,
+	getCookiesPromise
 };
