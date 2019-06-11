@@ -216,6 +216,20 @@ function convertRawToObject(cookies) {
 
 }
 
+const platformCheck = (profile) => {
+	if (process.platform === 'darwin') {
+		path = process.env.HOME + `/Library/Application Support/Google/Chrome/${profile}/Cookies`;
+		ITERATIONS = 1003;
+	} else if (process.platform === 'linux') {
+		path = process.env.HOME + `/.config/google-chrome/${profile}/Cookies`;
+		ITERATIONS = 1;
+	} else {
+		console.error('Only Mac and Linux are supported.');
+		process.exit();
+	}
+	return path
+}
+
 /*
 
 	Possible formats:
@@ -232,22 +246,7 @@ const getCookies = async (uri, format, callback, profile) => {
 
 	profile ? profile : profile = 'Default'
 
-	if (process.platform === 'darwin') {
-
-		path = process.env.HOME + `/Library/Application Support/Google/Chrome/${profile}/Cookies`;
-		ITERATIONS = 1003;
-	
-	} else if (process.platform === 'linux') {
-	
-		path = process.env.HOME + `/.config/google-chrome/${profile}/Cookies`;
-		ITERATIONS = 1;
-	
-	} else {
-	
-		console.error('Only Mac and Linux are supported.');
-		process.exit();
-	
-	}
+	path = platformCheck(profile)
 
 	db = new sqlite3.Database(path);
 
@@ -396,22 +395,7 @@ const getCookiesPromise = async (uri, format, profile) => {
 
 		profile ? profile : profile = 'Default'
 
-		if (process.platform === 'darwin') {
-
-			path = process.env.HOME + `/Library/Application Support/Google/Chrome/${profile}/Cookies`;
-			ITERATIONS = 1003;
-		
-		} else if (process.platform === 'linux') {
-		
-			path = process.env.HOME + `/.config/google-chrome/${profile}/Cookies`;
-			ITERATIONS = 1;
-		
-		} else {
-		
-			console.error('Only Mac and Linux are supported.');
-			process.exit();
-		
-		}
+		path = platformCheck(profile)
 
 		db = new sqlite3.Database(path);
 
