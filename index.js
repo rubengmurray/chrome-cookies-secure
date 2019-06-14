@@ -4,7 +4,7 @@
  * See the accompanying LICENSE file for terms.
  */
 
-var sqlite3 = require('sqlite3'),
+let sqlite3 = require('sqlite3'),
 	tld = require('tldjs'),
 	tough = require('tough-cookie'),
 	request = require('request'),
@@ -16,7 +16,7 @@ var sqlite3 = require('sqlite3'),
 	ITERATIONS,
 	dbClosed = false;
 
-var	KEYLENGTH = 16,
+let	KEYLENGTH = 16,
 	SALT = 'saltysalt'
 	
 // Decryption based on http://n8henrie.com/2014/05/decrypt-chrome-cookies-with-python/
@@ -24,7 +24,7 @@ var	KEYLENGTH = 16,
 
 function decrypt(key, encryptedData) {
 
-	var decipher,
+	let decipher,
 		decoded,
 		final,
 		padding,
@@ -41,9 +41,8 @@ function decrypt(key, encryptedData) {
 	final.copy(decoded, decoded.length - 1);
 
 	padding = decoded[decoded.length - 1];
-	if (padding) {
-		decoded = decoded.slice(0, decoded.length - padding);
-	}
+
+	if (padding) decoded = decoded.slice(0, decoded.length - padding);
 
 	decoded = decoded.toString('utf8');
 
@@ -53,7 +52,7 @@ function decrypt(key, encryptedData) {
 
 function getDerivedKey(callback) {
 
-	var keytar,
+	let keytar,
 		chromePassword;
 
 	if (process.platform === 'darwin') {
@@ -84,7 +83,7 @@ function convertChromiumTimestampToUnix(timestamp) {
 
 function convertRawToNetscapeCookieFileFormat(cookies, domain) {
 
-	var out = '',
+	let out = '',
 		cookieLength = cookies.length;
 
 	cookies.forEach(function (cookie, index) {
@@ -103,9 +102,7 @@ function convertRawToNetscapeCookieFileFormat(cookies, domain) {
 		out += cookie.name + '\t';
 		out += cookie.value + '\t';
 
-		if (cookieLength > index + 1) {
-			out += '\n';
-		}
+		if (cookieLength > index + 1) out += '\n';
 
 	});
 
@@ -115,15 +112,14 @@ function convertRawToNetscapeCookieFileFormat(cookies, domain) {
 
 function convertRawToHeader(cookies) {
 
-	var out = '',
+	let out = '',
 		cookieLength = cookies.length;
 
 	cookies.forEach(function (cookie, index) {
 
 		out += cookie.name + '=' + cookie.value;
-		if (cookieLength > index + 1) {
-			out += '; ';
-		}
+
+		if (cookieLength > index + 1) out += '; ';
 
 	});
 
@@ -133,14 +129,12 @@ function convertRawToHeader(cookies) {
 
 function convertRawToJar(cookies, uri) {
 
-	var jar = new request.jar();
+	let jar = new request.jar();
 
 	cookies.forEach(function (cookie, index) {
 
-		var jarCookie = request.cookie(cookie.name + '=' + cookie.value);
-		if (jarCookie) {
-			jar.setCookie(jarCookie, uri);
-		}
+		const jarCookie = request.cookie(cookie.name + '=' + cookie.value);
+		if (jarCookie) jar.setCookie(jarCookie, uri)
 
 	});
 
@@ -150,27 +144,21 @@ function convertRawToJar(cookies, uri) {
 
 function convertRawToSetCookieStrings(cookies) {
 
-	var cookieLength = cookies.length,
+	let cookieLength = cookies.length,
 		strings = [];
 
 	cookies.forEach(function(cookie, index) {
 
-		var out = '';
-
-		var dateExpires = new Date(convertChromiumTimestampToUnix(cookie.expires_utc) * 1000);
+		let out = '';
+		let dateExpires = new Date(convertChromiumTimestampToUnix(cookie.expires_utc) * 1000);
 
 		out += cookie.name + '=' + cookie.value + '; ';
 		out += 'expires=' + tough.formatDate(dateExpires) + '; ';
 		out += 'domain=' + cookie.host_key + '; ';
 		out += 'path=' + cookie.path;
 
-		if (cookie.is_secure) {
-			out += '; Secure';
-		}
-
-		if (cookie.is_httponly) {
-			out += '; HttpOnly';
-		}
+		if (cookie.is_secure) out += '; Secure';
+		if (cookie.is_httponly) out += '; HttpOnly';
 
 		strings.push(out);
 
@@ -192,12 +180,10 @@ function convertRawToPuppeteerState(cookies) {
 			domain: cookie.host_key,
 			path: cookie.path
 		}
-		if (cookie.is_secure) {
-			newCookieObject['Secure'] = true
-		}
-		if (cookie.is_httponly) {
-			newCookieObject['HttpOnly'] = true
-		}
+		
+		if (cookie.is_secure) newCookieObject['Secure'] = true
+		if (cookie.is_httponly) newCookieObject['HttpOnly'] = true
+
         puppeteerCookies.push(newCookieObject)
 	})
 
@@ -244,18 +230,24 @@ const platformCheck = (profile) => {
 
 const getCookies = async (uri, format, callback, profile) => {
 
-	profile ? profile : profile = 'Default'
-
-	path = platformCheck(profile)
-
-	db = new sqlite3.Database(path);
+	// if the `format` argument is a function, a 'format' was not declared
+	// thus the format argument index is the callback, and the callback is the profile (if given)
 
 	if (format instanceof Function) {
+		callback ? profile = callback : profile = 'Default'
 		callback = format;
 		format = null;
 	}
 
-	var parsedUrl = url.parse(uri);
+	path = platformCheck(profile)
+
+	if (!fs.existsSync(path)) {
+		return callback(new Error(`Please verify Chrome Profile, "${profile}" does not exist`))
+	}
+
+	db = new sqlite3.Database(path);
+
+	const parsedUrl = url.parse(uri);
 
 	if (!parsedUrl.protocol || !parsedUrl.hostname) {
 		return callback(new Error('Could not parse URI, format should be http://www.example.com/path/'));
@@ -394,17 +386,17 @@ const getCookiesPromise = async (uri, format, profile) => {
 	return new Promise(async (resolve, reject) => {
 
 		profile ? profile : profile = 'Default'
+		format ? format : format = null
 
-		path = platformCheck(profile)
+		path = platformCheck(profile);
 
-		db = new sqlite3.Database(path);
-
-		if (format instanceof Function) {
-			callback = format;
-			format = null;
+		if (!fs.existsSync(path)) {
+			return reject(new Error(`Please verify Chrome Profile, "${profile}" does not exist`))
 		}
 
-		var parsedUrl = url.parse(uri);
+		db = new sqlite3.Database(path);
+		
+		const parsedUrl = url.parse(uri);
 
 		if (!parsedUrl.protocol || !parsedUrl.hostname) {
 			return reject(new Error('Could not parse URI, format should be http://www.example.com/path/'));
