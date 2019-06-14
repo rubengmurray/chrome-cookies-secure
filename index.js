@@ -47,7 +47,6 @@ function decrypt(key, encryptedData) {
 	decoded = decoded.toString('utf8');
 
 	return decoded;
-
 }
 
 function getDerivedKey(callback) {
@@ -68,7 +67,6 @@ function getDerivedKey(callback) {
 		crypto.pbkdf2(chromePassword, SALT, ITERATIONS, KEYLENGTH, 'sha1', callback);
 
 	}
-
 }
 
 // Chromium stores its timestamps in sqlite on the Mac using the Windows Gregorian epoch
@@ -78,7 +76,6 @@ function getDerivedKey(callback) {
 function convertChromiumTimestampToUnix(timestamp) {
 
 	return int(timestamp.toString()).sub('11644473600000000').div(1000000);
-
 }
 
 function convertRawToNetscapeCookieFileFormat(cookies, domain) {
@@ -86,7 +83,7 @@ function convertRawToNetscapeCookieFileFormat(cookies, domain) {
 	let out = '',
 		cookieLength = cookies.length;
 
-	cookies.forEach(function (cookie, index) {
+	cookies.forEach((cookie, index) => {
 
 		out += cookie.host_key + '\t';
 		out += ((cookie.host_key === '.' + domain) ? 'TRUE' : 'FALSE') + '\t';
@@ -103,11 +100,9 @@ function convertRawToNetscapeCookieFileFormat(cookies, domain) {
 		out += cookie.value + '\t';
 
 		if (cookieLength > index + 1) out += '\n';
-
 	});
 
 	return out;
-
 }
 
 function convertRawToHeader(cookies) {
@@ -115,39 +110,31 @@ function convertRawToHeader(cookies) {
 	let out = '',
 		cookieLength = cookies.length;
 
-	cookies.forEach(function (cookie, index) {
-
+	cookies.forEach((cookie, index) => {
 		out += cookie.name + '=' + cookie.value;
-
 		if (cookieLength > index + 1) out += '; ';
-
 	});
 
 	return out;
-
 }
 
 function convertRawToJar(cookies, uri) {
 
 	let jar = new request.jar();
 
-	cookies.forEach(function (cookie, index) {
-
+	cookies.forEach((cookie, index) => {
 		const jarCookie = request.cookie(cookie.name + '=' + cookie.value);
 		if (jarCookie) jar.setCookie(jarCookie, uri)
-
 	});
 
 	return jar;
-
 }
 
 function convertRawToSetCookieStrings(cookies) {
 
-	let cookieLength = cookies.length,
-		strings = [];
+	let strings = [];
 
-	cookies.forEach(function(cookie, index) {
+	cookies.forEach((cookie, index) => {
 
 		let out = '';
 		let dateExpires = new Date(convertChromiumTimestampToUnix(cookie.expires_utc) * 1000);
@@ -161,18 +148,17 @@ function convertRawToSetCookieStrings(cookies) {
 		if (cookie.is_httponly) out += '; HttpOnly';
 
 		strings.push(out);
-
 	});
 
 	return strings;
-
 }
 
 function convertRawToPuppeteerState(cookies) {
 
 	let puppeteerCookies = [];
 	
-	cookies.forEach(function(cookie, index) {
+	cookies.forEach((cookie, index) => {
+
 		const newCookieObject = {
 			name: cookie.name,
 			value: cookie.value,
@@ -180,7 +166,7 @@ function convertRawToPuppeteerState(cookies) {
 			domain: cookie.host_key,
 			path: cookie.path
 		}
-		
+
 		if (cookie.is_secure) newCookieObject['Secure'] = true
 		if (cookie.is_httponly) newCookieObject['HttpOnly'] = true
 
@@ -192,27 +178,65 @@ function convertRawToPuppeteerState(cookies) {
 
 function convertRawToObject(cookies) {
 
-	var out = {};
+	let out = {};
 
-	cookies.forEach(function (cookie, index) {
-		out[cookie.name] = cookie.value;
-	});
+	cookies.forEach((cookie, index) => out[cookie.name] = cookie.value);
 
 	return out;
+}
 
+const switchFunction = (format, validCookies) => {
+	let output;
+	switch (format) {
+
+		case 'curl':
+			output = convertRawToNetscapeCookieFileFormat(validCookies, domain);
+			break;
+
+		case 'jar':
+			output = convertRawToJar(validCookies, uri);
+			break;
+
+		case 'set-cookie':
+			output = convertRawToSetCookieStrings(validCookies);
+			break;
+
+		case 'header':
+			output = convertRawToHeader(validCookies);
+			break;
+
+		case 'puppeteer':
+			output = convertRawToPuppeteerState(validCookies)
+			break;
+
+		case 'object':
+			/* falls through */
+		default:
+			output = convertRawToObject(validCookies);
+			break;
+	}
+	return output
 }
 
 const platformCheck = (profile) => {
+
 	if (process.platform === 'darwin') {
+
 		path = process.env.HOME + `/Library/Application Support/Google/Chrome/${profile}/Cookies`;
 		ITERATIONS = 1003;
+
 	} else if (process.platform === 'linux') {
+
 		path = process.env.HOME + `/.config/google-chrome/${profile}/Cookies`;
 		ITERATIONS = 1;
+
 	} else {
+
 		console.error('Only Mac and Linux are supported.');
 		process.exit();
+
 	}
+
 	return path
 }
 
@@ -228,7 +252,7 @@ const platformCheck = (profile) => {
 
  */
 
-const getCookies = async (uri, format, callback, profile) => {
+const getCookies = (uri, format, callback, profile) => {
 
 	// if the `format` argument is a function, a 'format' was not declared
 	// thus the format argument index is the callback, and the callback is the profile (if given)
@@ -258,17 +282,15 @@ const getCookies = async (uri, format, callback, profile) => {
 		dbClosed = false;
 	}
 
-	getDerivedKey(function (err, derivedKey) {
+	getDerivedKey((err, derivedKey) => {
 
-		if (err) {
-			return callback(err);
-		}
+		if (err) return callback(err)
 
-		db.serialize(function () {
+		db.serialize(() => {
 
-			var cookies = [];
+			let cookies = [];
 
-			var domain = tld.getDomain(uri);
+			const domain = tld.getDomain(uri);
 
 			if (!domain) {
 				return callback(new Error('Could not parse domain from URI, format should be http://www.example.com/path/'));
@@ -280,12 +302,9 @@ const getCookies = async (uri, format, callback, profile) => {
 			
 			db.each("SELECT host_key, path, is_secure, expires_utc, name, value, encrypted_value, creation_utc, is_httponly, has_expires, is_persistent FROM cookies where host_key like '%" + domain + "' ORDER BY LENGTH(path) DESC, creation_utc ASC", function (err, cookie) {
 
-				var encryptedValue,
-					value;
+				let encryptedValue
 
-				if (err) {
-					return callback(err);
-				}
+				if (err) return callback(err)
 
 				if (cookie.value === '' && cookie.encrypted_value.length > 0) {
 					encryptedValue = cookie.encrypted_value;
@@ -295,90 +314,43 @@ const getCookies = async (uri, format, callback, profile) => {
 
 				cookies.push(cookie);
 
-			}, function () {
+			}, () => {
 
-				var host = parsedUrl.hostname,
+				let host = parsedUrl.hostname,
 					path = parsedUrl.path,
 					isSecure = parsedUrl.protocol.match('https'),
-					cookieStore = {},
-					validCookies = [],
-					output;
+					validCookies = []
 
-				cookies.forEach(function (cookie) {
+				cookies.forEach((cookie) => {
 
-					if (cookie.is_secure && !isSecure) {
-						return;
-					}
-
-					if (!tough.domainMatch(host, cookie.host_key, true)) {
-						return;
-					}
-
-					if (!tough.pathMatch(path, cookie.path)) {
-						return;
-					}
+					if (cookie.is_secure && !isSecure) return;
+					if (!tough.domainMatch(host, cookie.host_key, true)) return;
+					if (!tough.pathMatch(path, cookie.path)) return;
 
 					validCookies.push(cookie);
-
 				});
 
-				var filteredCookies = [];
-				var keys = {};
+				let filteredCookies = [];
+				let keys = {};
 
-				validCookies.reverse().forEach(function (cookie) {
+				validCookies.reverse().forEach((cookie) => {
 
 					if (typeof keys[cookie.name] === 'undefined') {
 						filteredCookies.push(cookie);
 						keys[cookie.name] = true;
 					}
-
 				});
 
 				validCookies = filteredCookies.reverse();
+				const output = switchFunction(format, validCookies);
 
-				switch (format) {
-
-					case 'curl':
-						output = convertRawToNetscapeCookieFileFormat(validCookies, domain);
-						break;
-
-					case 'jar':
-						output = convertRawToJar(validCookies, uri);
-						break;
-
-					case 'set-cookie':
-						output = convertRawToSetCookieStrings(validCookies);
-						break;
-
-					case 'header':
-						output = convertRawToHeader(validCookies);
-						break;
-
-					case 'puppeteer':
-						output = convertRawToPuppeteerState(validCookies)
-						break;
-
-					case 'object':
-						/* falls through */
-					default:
-						output = convertRawToObject(validCookies);
-						break;
-
-				}
-
-				db.close(function(err) {
-					if (!err) {
-						dbClosed = true;
-					}
+				db.close((err) => {
+					if (!err) dbClosed = true;
 					return callback(null, output);
 				});
-
 			});
-
 		});
-
 	});
-
 };
 
 const getCookiesPromise = async (uri, format, profile) => {
@@ -407,17 +379,17 @@ const getCookiesPromise = async (uri, format, profile) => {
 			dbClosed = false;
 		}
 
-		getDerivedKey(function (err, derivedKey) {
+		getDerivedKey((err, derivedKey) => {
 
 			if (err) {
 				return reject(err);
 			}
 
-			db.serialize(function () {
+			db.serialize(() => {
 
-				var cookies = [];
+				let cookies = [];
 
-				var domain = tld.getDomain(uri);
+				const domain = tld.getDomain(uri);
 
 				if (!domain) {
 					return reject(new Error('Could not parse domain from URI, format should be http://www.example.com/path/'));
@@ -429,12 +401,9 @@ const getCookiesPromise = async (uri, format, profile) => {
 				
 				db.each("SELECT host_key, path, is_secure, expires_utc, name, value, encrypted_value, creation_utc, is_httponly, has_expires, is_persistent FROM cookies where host_key like '%" + domain + "' ORDER BY LENGTH(path) DESC, creation_utc ASC", function (err, cookie) {
 
-					var encryptedValue,
-						value;
+					let encryptedValue
 
-					if (err) {
-						return reject(err);
-					}
+					if (err) return reject(err);
 
 					if (cookie.value === '' && cookie.encrypted_value.length > 0) {
 						encryptedValue = cookie.encrypted_value;
@@ -444,86 +413,42 @@ const getCookiesPromise = async (uri, format, profile) => {
 
 					cookies.push(cookie);
 
-				}, function () {
+				}, () => {
 
-					var host = parsedUrl.hostname,
+					let host = parsedUrl.hostname,
 						path = parsedUrl.path,
 						isSecure = parsedUrl.protocol.match('https'),
-						cookieStore = {},
-						validCookies = [],
-						output;
+						validCookies = []
 
-					cookies.forEach(function (cookie) {
+					cookies.forEach((cookie) => {
 
-						if (cookie.is_secure && !isSecure) {
-							return;
-						}
-
-						if (!tough.domainMatch(host, cookie.host_key, true)) {
-							return;
-						}
-
-						if (!tough.pathMatch(path, cookie.path)) {
-							return;
-						}
+						if (cookie.is_secure && !isSecure) return;
+						if (!tough.domainMatch(host, cookie.host_key, true)) return;
+						if (!tough.pathMatch(path, cookie.path)) return;
 
 						validCookies.push(cookie);
-
 					});
 
-					var filteredCookies = [];
-					var keys = {};
+					let filteredCookies = [];
+					let keys = {};
 
-					validCookies.reverse().forEach(function (cookie) {
+					validCookies.reverse().forEach((cookie) => {
 
 						if (typeof keys[cookie.name] === 'undefined') {
 							filteredCookies.push(cookie);
 							keys[cookie.name] = true;
 						}
-
 					});
 
 					validCookies = filteredCookies.reverse();
-
-					switch (format) {
-
-						case 'curl':
-							output = convertRawToNetscapeCookieFileFormat(validCookies, domain);
-							break;
-
-						case 'jar':
-							output = convertRawToJar(validCookies, uri);
-							break;
-
-						case 'set-cookie':
-							output = convertRawToSetCookieStrings(validCookies);
-							break;
-
-						case 'header':
-							output = convertRawToHeader(validCookies);
-							break;
-
-						case 'puppeteer':
-							output = convertRawToPuppeteerState(validCookies)
-							break;
-
-						case 'object':
-							/* falls through */
-						default:
-							output = convertRawToObject(validCookies);
-							break;
-
-					}
+					const output = switchFunction(format, validCookies);
 
 					db.close(function(err) {
 						if (!err) dbClosed = true
 						resolve(output);
 					});
-
 				});
-
 			});
-
 		});
 	})
 };
