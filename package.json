@@ -14,7 +14,7 @@
   ],
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "author": "Bertrand Fan <bert@bert.org> (https://bert.org/)",
   "license": "MIT",
@@ -27,8 +27,12 @@
     "url": "https://github.com/bertrandom/chrome-cookies-secure.git"
   },
   "dependencies": {
+    "chai": "^4.2.0",
+    "expect": "^24.8.0",
     "int": "^0.2.0",
+    "mocha": "^6.1.4",
     "request": "^2.88.0",
+    "should": "^13.2.3",
     "sqlite3": "^4.0.6",
     "tldjs": "^1.5.1",
     "tough-cookie": "^2.3.4"

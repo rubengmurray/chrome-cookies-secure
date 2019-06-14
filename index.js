@@ -9,6 +9,7 @@ let sqlite3 = require('sqlite3'),
 	tough = require('tough-cookie'),
 	request = require('request'),
 	int = require('int'),
+	fs = require('fs'),
 	url = require('url'),
 	crypto = require('crypto'),
 	Cookie = tough.Cookie,
@@ -300,7 +301,7 @@ const getCookies = (uri, format, callback, profile) => {
 			// RFC 6265 - Section 5.4, step 2
 			// http://tools.ietf.org/html/rfc6265#section-5.4
 			
-			db.each("SELECT host_key, path, is_secure, expires_utc, name, value, encrypted_value, creation_utc, is_httponly, has_expires, is_persistent FROM cookies where host_key like '%" + domain + "' ORDER BY LENGTH(path) DESC, creation_utc ASC", function (err, cookie) {
+			db.each("SELECT host_key, path, is_secure, expires_utc, name, value, encrypted_value, creation_utc, is_httponly, has_expires, is_persistent FROM cookies where host_key like '%" + domain + "' ORDER BY LENGTH(path) DESC, creation_utc ASC", (err, cookie) => {
 
 				let encryptedValue
 
@@ -353,9 +354,9 @@ const getCookies = (uri, format, callback, profile) => {
 	});
 };
 
-const getCookiesPromise = async (uri, format, profile) => {
+const getCookiesPromise = (uri, format, profile) => {
 
-	return new Promise(async (resolve, reject) => {
+	return new Promise((resolve, reject) => {
 
 		profile ? profile : profile = 'Default'
 		format ? format : format = null
@@ -381,9 +382,7 @@ const getCookiesPromise = async (uri, format, profile) => {
 
 		getDerivedKey((err, derivedKey) => {
 
-			if (err) {
-				return reject(err);
-			}
+			if (err) return reject(err)
 
 			db.serialize(() => {
 
@@ -399,7 +398,7 @@ const getCookiesPromise = async (uri, format, profile) => {
 				// RFC 6265 - Section 5.4, step 2
 				// http://tools.ietf.org/html/rfc6265#section-5.4
 				
-				db.each("SELECT host_key, path, is_secure, expires_utc, name, value, encrypted_value, creation_utc, is_httponly, has_expires, is_persistent FROM cookies where host_key like '%" + domain + "' ORDER BY LENGTH(path) DESC, creation_utc ASC", function (err, cookie) {
+				db.each("SELECT host_key, path, is_secure, expires_utc, name, value, encrypted_value, creation_utc, is_httponly, has_expires, is_persistent FROM cookies where host_key like '%" + domain + "' ORDER BY LENGTH(path) DESC, creation_utc ASC", (err, cookie) => {
 
 					let encryptedValue
 
@@ -443,7 +442,7 @@ const getCookiesPromise = async (uri, format, profile) => {
 					validCookies = filteredCookies.reverse();
 					const output = switchFunction(format, validCookies);
 
-					db.close(function(err) {
+					db.close((err) => {
 						if (!err) dbClosed = true
 						resolve(output);
 					});
