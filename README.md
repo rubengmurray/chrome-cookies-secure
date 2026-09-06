@@ -2,13 +2,19 @@
 
 Extract encrypted Google Chrome cookies for a url on Mac OS X, Windows, or Linux
 
-[![Socket Badge](https://badge.socket.dev/npm/package/chrome-cookies-secure/3.0.2)](https://badge.socket.dev/npm/package/chrome-cookies-secure/3.0.2)
+[![Socket Badge](https://badge.socket.dev/npm/package/chrome-cookies-secure/latest)](https://badge.socket.dev/npm/package/chrome-cookies-secure/latest)
 
 ## Installation
 
 ```
 npm install chrome-cookies-secure
 ```
+
+### Alpha Version (Sept 2026)
+
+- Due to lack of test coverage on Linux & Windows, latest security bumps have been released on `@alpha`.
+- Beware there may be instability in this release, but that it comes at the benefit of better security.
+- Please raise issues for any bugs you find.
 
 ## Optional Dependencies
 
