@@ -3,7 +3,7 @@ import assert from 'assert';
 import fs from 'fs';
 import path from 'path';
 import { chromium } from '@playwright/test';
-import chromeCookies from '../index.js'; // Your package
+import chromeCookies from '../index.js';
 
 const COOKIE_NAME = 'test_secure_cookie';
 const COOKIE_VALUE = 'super-secret-123';
