@@ -63,6 +63,8 @@ describe('chrome-cookies-secure E2E Tests', function () {
         path.join(USER_DATA_DIR, 'Default')
       );
 
+    console.log(cookies);
+
     // 5. Assert the package successfully parsed the TLD and decrypted the payload
     assert.ok(cookies, 'Cookies object should be returned');
     assert.strictEqual(

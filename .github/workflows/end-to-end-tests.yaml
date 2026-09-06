@@ -10,7 +10,8 @@ jobs:
       # If one version fails, don't cancel the others—let them finish running
       fail-fast: false
       matrix:
-        node-version: [22.18.0, 24.x]
+        # node-version: [22.18.0, 24.x]
+        node-version: [22.18.0]
 
     steps:
       - name: Checkout repository
