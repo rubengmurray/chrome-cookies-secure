@@ -21,17 +21,18 @@ describe('chrome-cookies-secure E2E Tests', function () {
   });
 
   it('should write a cookie via Chrome and decrypt it via the package', async () => {
-    // Playwright defaults to --use-mock-keychain and --password-store=basic, which
-    // encrypt cookies with a hardcoded test key. On macOS this package decrypts
-    // using the real "Chrome Safe Storage" keychain entry, so we must opt out.
+    // Playwright defaults to --use-mock-keychain and --password-store=basic.
+    // On macOS this package decrypts via the real "Chrome Safe Storage" keychain entry, so we must opt out. 
+    // On Linux the package always derives the key from the hardcoded basic-store password, so keep Playwright's defaults.
     const launchOptions = {
       headless: true,
-      ignoreDefaultArgs: ['--use-mock-keychain', '--password-store=basic'],
+      ...(process.platform === 'darwin'
+        ? {
+            channel: 'chrome',
+            ignoreDefaultArgs: ['--use-mock-keychain', '--password-store=basic'],
+          }
+        : {}),
     };
-
-    if (process.platform === 'darwin') {
-      launchOptions.channel = 'chrome';
-    }
 
     const context = await chromium.launchPersistentContext(USER_DATA_DIR, launchOptions);
     
@@ -56,7 +57,6 @@ describe('chrome-cookies-secure E2E Tests', function () {
     // Close the context to force Chromium to flush the cookie SQLite DB to disk
     await context.close();
 
-    // 4. Invoke your package to pull the cookie out of the generated profile
     const cookies = await chromeCookies.getCookiesPromised(
         FAKE_URL,
         'object',
