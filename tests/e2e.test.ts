@@ -20,6 +20,11 @@ describe('chrome-cookies-secure E2E Tests', function () {
     fs.rmSync(USER_DATA_DIR, { recursive: true, force: true });
   });
 
+  // docker run --rm -it \
+  // -v "$PWD":/app -w /app \
+  // mcr.microsoft.com/playwright:v1.61.1-jammy \
+  // bash -lc 'npm ci && npm run test:e2e'
+
   it('should write a cookie via Chrome and decrypt it via the package', async () => {
     // Playwright defaults to --use-mock-keychain and --password-store=basic.
     // On macOS this package decrypts via the real "Chrome Safe Storage" keychain entry, so we must opt out. 
