@@ -7,6 +7,7 @@ Extract encrypted Google Chrome cookies for a url on Mac OS X, Windows, or Linux
 [![Socket Badge](https://badge.socket.dev/npm/package/chrome-cookies-secure/latest)](https://socket.dev/npm/package/chrome-cookies-secure/overview/latest)
 
 `@canary`
+
 [![Socket Badge](https://badge.socket.dev/npm/package/chrome-cookies-secure/canary)](https://socket.dev/npm/package/chrome-cookies-secure/overview/canary)
 
 ## Installation
