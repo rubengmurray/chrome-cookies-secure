@@ -13,6 +13,7 @@ Extract encrypted Google Chrome cookies for a url on Mac OS X, Windows, or Linux
 
 ```
 npm install chrome-cookies-secure
+npm install chrome-cookies-secure@3.0.3-canary.0
 ```
 
 ##### Canary Version (Sept 2026)
